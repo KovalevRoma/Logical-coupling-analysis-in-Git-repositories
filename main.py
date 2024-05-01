@@ -1,9 +1,11 @@
 from datetime import date, timedelta, datetime
-
+import copy
 import git
 
-start_date = date.today() - timedelta(days=2)
+start_date = date.today() - timedelta(days=15)
 start_date = datetime.combine(start_date, datetime.min.time())
+set_of_free = set()
+set_of_pairs = set()
 
 
 def get_changed_files_by_author(commits):
@@ -49,17 +51,47 @@ def create_matrix_of_similarities(author2set_of_changed_files, number2author):
         [len(author2set_of_changed_files[number2author[i]] & author2set_of_changed_files[number2author[j]]) for i in
          range(n)] for j in range(n)]
     for i in range(n):
-        matrix[i][i] = 0
+        matrix[i][i] = -1
     return matrix
 
 
 def finder_lonelys(sim_matrix):
     n = len(sim_matrix)
     max_sim = [max(sim_matrix[i]) for i in range(n)]
-    print(max_sim)
+    return max_sim
+
+
+def re_similarity(sim_matrix_copy, max_sim_copy):
+    global set_of_free, set_of_pairs
+    if len(set_of_free) == 1:
+        ind, val = max(enumerate(max_sim_copy), key=lambda x: x[1])
+        set_of_pairs.add((ind, ind))
+        max_sim_copy[ind] = -1
+    else:
+        n = len(sim_matrix_copy)
+        ind1, val = max(enumerate(max_sim_copy), key=lambda x: x[1])
+        ind2, val = max(enumerate(sim_matrix_copy[ind1]), key=lambda x: x[1])
+        set_of_free.remove(ind1)
+        set_of_free.remove(ind2)
+        set_of_pairs.add((ind1, ind2))
+        for i in range(n):
+            sim_matrix_copy[i][ind1] = -1
+            sim_matrix_copy[i][ind2] = -1
+        max_sim_copy[ind1] = -1
+        max_sim_copy[ind2] = -1
+
+
+def greedy_algorithm(sim_matrix, max_sim):
+    global set_of_free
+    n = len(max_sim)
+    set_of_free = set(range(n))
+    matrix_copy = copy.deepcopy(sim_matrix)
+    max_sim_copy = copy.deepcopy(max_sim)
+    while max(max_sim_copy) >= 0:
+        re_similarity(matrix_copy, max_sim_copy)
+
 
 def main():
-    # Путь к локальному репозиторию Git
     repo_path = '/home/roman-not-hehe/Desktop/sandboxes/pytorch'
     repo = git.Repo(repo_path)
     commits = []
@@ -72,13 +104,16 @@ def main():
     author2num, num2author = enumerate_authors(commits)
     print("done enumerate authors")
     n = len(num2author)
+    print(n)
     matrix = create_matrix_of_similarities(author_to_set_of_changed_files, num2author)
-    print(matrix)
-    for i in range(n):
-        for j in range(n):
-            print(matrix[i][j], end=" ")
-        print()
-    finder_lonelys(matrix)
+    lili = finder_lonelys(matrix)
+    greedy_algorithm(matrix, lili)
+    print(set_of_pairs)
+    sum = 0
+    for pair in set_of_pairs:
+        sum += matrix[pair[0]][pair[1]]
+        print(num2author[pair[0]], " -- ", num2author[pair[1]], "  :  ", matrix[pair[0]][pair[1]])
+    print(sum / len(set_of_pairs))
 
 
 if __name__ == "__main__":
