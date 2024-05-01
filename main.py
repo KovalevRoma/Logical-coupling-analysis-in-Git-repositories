@@ -1,11 +1,8 @@
 from datetime import date, timedelta, datetime
 import copy
 import git
-
-start_date = date.today() - timedelta(days=15)
-start_date = datetime.combine(start_date, datetime.min.time())
-set_of_free = set()
-set_of_pairs = set()
+import sys
+from colorama import Fore, Style
 
 
 def get_changed_files_by_author(commits):
@@ -61,8 +58,7 @@ def finder_lonelys(sim_matrix):
     return max_sim
 
 
-def re_similarity(sim_matrix_copy, max_sim_copy):
-    global set_of_free, set_of_pairs
+def re_similarity(sim_matrix_copy, max_sim_copy, set_of_free, set_of_pairs):
     if len(set_of_free) == 1:
         ind, val = max(enumerate(max_sim_copy), key=lambda x: x[1])
         set_of_pairs.add((ind, ind))
@@ -82,38 +78,66 @@ def re_similarity(sim_matrix_copy, max_sim_copy):
 
 
 def greedy_algorithm(sim_matrix, max_sim):
-    global set_of_free
     n = len(max_sim)
+    set_of_pairs = set()
     set_of_free = set(range(n))
     matrix_copy = copy.deepcopy(sim_matrix)
     max_sim_copy = copy.deepcopy(max_sim)
     while max(max_sim_copy) >= 0:
-        re_similarity(matrix_copy, max_sim_copy)
+        re_similarity(matrix_copy, max_sim_copy, set_of_free, set_of_pairs)
+    return set_of_pairs
 
 
-def main():
-    repo_path = '/home/roman-not-hehe/Desktop/sandboxes/pytorch'
+def create_list_of_commits(repo_path):
+    try:
+        days = int(input(Fore.BLUE + Style.BRIGHT + "For how many days back do you want the information?\n"))
+        if days <= 0:
+            raise ValueError(Fore.RED + "The number of days back must be greater than zero.")
+        print(Fore.BLUE + f"You have requested information for the last {days} days")
+    except ValueError as e:
+        print(Fore.RED + f"Error: {e}")
+        print(Fore.RED + "The number of days must be a positive integer number")
+        sys.exit(1)
+    except Exception as e:
+        print(Fore.RED + f"Error: {e}")
+        print(Fore.RED + "The number of days must be a positive integer number")
+        sys.exit(1)
+    start_date = date.today() - timedelta(days=days)
+    start_date = datetime.combine(start_date, datetime.min.time())
+
     repo = git.Repo(repo_path)
+
     commits = []
     for commit in repo.iter_commits():
         if datetime.combine(commit.authored_datetime, datetime.min.time()) < start_date:
             break
         commits.append(commit)
-    author_to_set_of_changed_files = get_changed_files_by_author(commits)
-    print("done changed files")
-    author2num, num2author = enumerate_authors(commits)
-    print("done enumerate authors")
-    n = len(num2author)
-    print(n)
+    return commits
+
+
+def coupling_analysis(author_to_set_of_changed_files, num2author):
     matrix = create_matrix_of_similarities(author_to_set_of_changed_files, num2author)
-    lili = finder_lonelys(matrix)
-    greedy_algorithm(matrix, lili)
-    print(set_of_pairs)
-    sum = 0
+    maxima_of_columns = finder_lonelys(matrix)
+    set_of_pairs = greedy_algorithm(matrix, maxima_of_columns)
+    sum_of_sim = 0
+
+    print(f"Printing pairs of authors and the number of shared files:")
     for pair in set_of_pairs:
-        sum += matrix[pair[0]][pair[1]]
+        sum_of_sim += matrix[pair[0]][pair[1]]
         print(num2author[pair[0]], " -- ", num2author[pair[1]], "  :  ", matrix[pair[0]][pair[1]])
-    print(sum / len(set_of_pairs))
+    print(f"The average \'similarity\' of coupling:" + Fore.BLACK + f" {sum_of_sim / len(set_of_pairs)}")
+
+
+def main():
+    repo_path = str(input(Fore.BLUE + Style.BRIGHT + f"Please enter the path to your git-repo:\n"))
+    # repo_path = '/home/roman-not-hehe/Desktop/sandboxes/pytorch'
+    commits = create_list_of_commits(repo_path='/home/roman-not-hehe/Desktop/sandboxes/pytorch')
+    author_to_set_of_changed_files = get_changed_files_by_author(commits)
+    author2num, num2author = enumerate_authors(commits)
+    print(f"Number of commits:" + Fore.BLACK + f" {len(commits)}" + Fore.BLUE + Style.BRIGHT)
+    print(f"Number of contributors:" + Fore.BLACK + f" {len(num2author)}" + Fore.BLUE + Style.BRIGHT)
+    coupling_analysis(author_to_set_of_changed_files, num2author)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
