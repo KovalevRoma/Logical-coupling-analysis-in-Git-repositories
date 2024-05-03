@@ -132,7 +132,7 @@ def coupling_analysis(author_to_set_of_changed_files, num2author):
         if flag == "no":
             if matrix[pair[0]][pair[1]] > 0:
                 print(f"{num2author[pair[0]]:<35}  --  {num2author[pair[1]]:>35}   :   {value}")
-        if flag == "yes":
+        else:
             print(f"{num2author[pair[0]]:<35}  --  {num2author[pair[1]]:>35}   :   {value}")
     print(Fore.BLUE + f"The average \'similarity\' of coupling:" + Fore.BLACK + f" {sum_of_sim / len(set_of_pairs)}")
     list_of_same_files.sort()
@@ -143,7 +143,7 @@ def coupling_analysis(author_to_set_of_changed_files, num2author):
 def main():
     repo_path = str(input(Fore.BLUE + Style.BRIGHT + f"Please enter the path to your git-repo:\n"))
     # repo_path = '/home/roman-not-hehe/Desktop/sandboxes/pytorch'
-    commits = create_list_of_commits(repo_path='/home/roman-not-hehe/Desktop/sandboxes/pytorch')
+    commits = create_list_of_commits(repo_path)
     author_to_set_of_changed_files = get_changed_files_by_author(commits)
     author2num, num2author = enumerate_authors(commits)
     print(f"Number of commits:" + Fore.BLACK + f" {len(commits)}" + Fore.BLUE + Style.BRIGHT)
