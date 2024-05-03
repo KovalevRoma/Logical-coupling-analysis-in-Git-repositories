@@ -122,7 +122,7 @@ def coupling_analysis(author_to_set_of_changed_files, num2author):
     maxima_of_columns = finder_pseudo_best(matrix)
     set_of_pairs = greedy_algorithm(matrix, maxima_of_columns)
     sum_of_sim = 0
-    flag = str(input(f"Do you want to output zero pairs? yes/no"))
+    flag = str(input(f"Do you want to output zero pairs? yes/no\n"))
     print(f"Printing pairs of authors and the number of shared files:" + Fore.BLACK)
     list_of_same_files = []
     for pair in set_of_pairs:
