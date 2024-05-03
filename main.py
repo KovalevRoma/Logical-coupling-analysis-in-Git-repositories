@@ -1,5 +1,4 @@
 from datetime import date, timedelta, datetime
-import copy
 import git
 import sys
 from colorama import Fore, Style
@@ -58,33 +57,32 @@ def finder_pseudo_best(sim_matrix):
     return max_sim
 
 
-def re_similarity(sim_matrix_copy, max_sim_copy, set_of_free, set_of_pairs):
+def re_similarity(sim_matrix, set_of_free, set_of_pairs):
     if len(set_of_free) == 1:
-        ind, val = max(enumerate(max_sim_copy), key=lambda x: x[1])
+        ind = list(set_of_free)[0]
         set_of_pairs.add((ind, ind))
-        max_sim_copy[ind] = -1
+        set_of_free.remove(ind)
     else:
-        n = len(sim_matrix_copy)
-        ind1, val = max(enumerate(max_sim_copy), key=lambda x: x[1])
-        ind2, val = max(enumerate(sim_matrix_copy[ind1]), key=lambda x: x[1])
-        set_of_free.remove(ind1)
-        set_of_free.remove(ind2)
-        set_of_pairs.add((ind1, ind2))
-        for i in range(n):
-            sim_matrix_copy[i][ind1] = -1
-            sim_matrix_copy[i][ind2] = -1
-        max_sim_copy[ind1] = -1
-        max_sim_copy[ind2] = -1
+        ind_chosen_1 = 0
+        ind_chosen_2 = 0
+        max_val = -1
+        for ind1 in set_of_free:
+            for ind2 in set_of_free:
+                if sim_matrix[ind1][ind2] > max_val:
+                    max_val = sim_matrix[ind1][ind2]
+                    ind_chosen_1 = ind1
+                    ind_chosen_2 = ind2
+        set_of_free.remove(ind_chosen_1)
+        set_of_free.remove(ind_chosen_2)
+        set_of_pairs.add((ind_chosen_1, ind_chosen_2))
 
 
 def greedy_algorithm(sim_matrix, max_sim):
     n = len(max_sim)
     set_of_pairs = set()
     set_of_free = set(range(n))
-    matrix_copy = copy.deepcopy(sim_matrix)
-    max_sim_copy = copy.deepcopy(max_sim)
-    while max(max_sim_copy) >= 0:
-        re_similarity(matrix_copy, max_sim_copy, set_of_free, set_of_pairs)
+    while len(set_of_free) > 0:
+        re_similarity(sim_matrix, set_of_free, set_of_pairs)
     return set_of_pairs
 
 
