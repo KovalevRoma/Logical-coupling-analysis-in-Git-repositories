@@ -52,7 +52,7 @@ def create_matrix_of_similarities(author2set_of_changed_files, number2author):
     return matrix
 
 
-def finder_lonelys(sim_matrix):
+def finder_pseudo_best(sim_matrix):
     n = len(sim_matrix)
     max_sim = [max(sim_matrix[i]) for i in range(n)]
     return max_sim
@@ -112,20 +112,34 @@ def create_list_of_commits(repo_path):
         if datetime.combine(commit.authored_datetime, datetime.min.time()) < start_date:
             break
         commits.append(commit)
+
+    if len(commits) == 0:
+        print(Fore.RED + f"Please update the git repository. There are no commits in the last {days} days")
+        sys.exit(1)
     return commits
 
 
 def coupling_analysis(author_to_set_of_changed_files, num2author):
     matrix = create_matrix_of_similarities(author_to_set_of_changed_files, num2author)
-    maxima_of_columns = finder_lonelys(matrix)
+    maxima_of_columns = finder_pseudo_best(matrix)
     set_of_pairs = greedy_algorithm(matrix, maxima_of_columns)
     sum_of_sim = 0
-
-    print(f"Printing pairs of authors and the number of shared files:")
+    flag = str(input(f"Do you want to output zero pairs? yes/no"))
+    print(f"Printing pairs of authors and the number of shared files:" + Fore.BLACK)
+    list_of_same_files = []
     for pair in set_of_pairs:
-        sum_of_sim += matrix[pair[0]][pair[1]]
-        print(num2author[pair[0]], " -- ", num2author[pair[1]], "  :  ", matrix[pair[0]][pair[1]])
-    print(f"The average \'similarity\' of coupling:" + Fore.BLACK + f" {sum_of_sim / len(set_of_pairs)}")
+        value = matrix[pair[0]][pair[1]]
+        sum_of_sim += value
+        list_of_same_files.append(value)
+        if flag == "no":
+            if matrix[pair[0]][pair[1]] > 0:
+                print(f"{num2author[pair[0]]:<35}  --  {num2author[pair[1]]:>35}   :   {value}")
+        if flag == "yes":
+            print(f"{num2author[pair[0]]:<35}  --  {num2author[pair[1]]:>35}   :   {value}")
+    print(Fore.BLUE + f"The average \'similarity\' of coupling:" + Fore.BLACK + f" {sum_of_sim / len(set_of_pairs)}")
+    list_of_same_files.sort()
+    print(
+        Fore.BLUE + f"The median \'similarity\' of coupling:" + Fore.BLACK + f" {list_of_same_files[len(list_of_same_files) // 2]}")
 
 
 def main():
