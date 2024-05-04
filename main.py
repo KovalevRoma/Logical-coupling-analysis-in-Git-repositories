@@ -47,7 +47,7 @@ def create_matrix_of_similarities(author2set_of_changed_files, number2author):
         [len(author2set_of_changed_files[number2author[i]] & author2set_of_changed_files[number2author[j]]) for i in
          range(n)] for j in range(n)]
     for i in range(n):
-        matrix[i][i] = -1
+        matrix[i][i] = 0
     return matrix
 
 
@@ -63,9 +63,9 @@ def re_similarity(sim_matrix, set_of_free, set_of_pairs):
         set_of_pairs.add((ind, ind))
         set_of_free.remove(ind)
     else:
-        ind_chosen_1 = 0
-        ind_chosen_2 = 0
-        max_val = -1
+        ind_chosen_1 = list(set_of_free)[0]
+        ind_chosen_2 = list(set_of_free)[1]
+        max_val = 0
         for ind1 in set_of_free:
             for ind2 in set_of_free:
                 if sim_matrix[ind1][ind2] > max_val:
